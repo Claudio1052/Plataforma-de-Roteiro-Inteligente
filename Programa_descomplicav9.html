@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assistente Clarinha — Apoio ao Vendedor (Profissional)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="" crossorigin="anonymous"></script>
+  <style>
+    :root{
+      --brand:#e60000;
+      --muted:#6b7280;
+      --bg:#f6f8fa;
+      --card:#ffffff;
+      --success:#16a34a;
+      --danger:#dc2626;
+      --warning:#f59e0b;
+      --glass: rgba(255,255,255,0.6);
+      font-family: Inter, "Segoe UI", Roboto, system-ui, -apple-system, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%;margin:0;background:var(--bg);color:#111}
+    header{background:linear-gradient(90deg,var(--brand),#c70000);color:#fff;padding:18px 20px;box-shadow:0 6px 18px rgba(0,0,0,0.08)}
+    header h1{margin:0;font-size:20px;display:flex;align-items:center;gap:12px}
+    main{max-width:1100px;margin:26px auto;padding:22px;border-radius:12px;background:linear-gradient(180deg,var(--card),var(--glass));box-shadow:0 8px 30px rgba(2,6,23,0.06)}
+    .grid{display:grid;grid-template-columns:1fr 340px;gap:20px}
+    .full{grid-column:1/-1}
+    .card{background:var(--card);border-radius:10px;padding:16px;box-shadow:0 4px 14px rgba(2,6,23,0.04);}
+    label{display:block;font-weight:600;margin-bottom:6px}
+    input[type=file], input[type=text]{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e6e9;box-sizing: border-box;}
+    .muted{color:var(--muted);font-size:13px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    button{background:var(--brand);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:600;transition: background-color 0.2s, opacity 0.2s;}
+    button.ghost{background:transparent;color:var(--brand);border:1px solid rgba(0,0,0,0.06)}
+    button:disabled{opacity:0.6;cursor:not-allowed;background: #ccc;}
+    button.ghost:disabled{background:transparent;opacity:0.5;}
+    button.retry{background:#f59e0b;color:#fff;}
+    button.retry:disabled{background:#ccc;}
+    #output,#suggestions,#callQuality{height:250px;overflow:auto;padding:12px;border-radius:8px;border:1px solid #eef2f7;background:#fff}
+    h2{font-size:16px;margin:12px 0}
+    .progress{height:10px;background:#eee;border-radius:999px;overflow:hidden}
+    .progress > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--success),#22c55e);transition:width .4s}
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+    
+    /* === ESTILOS ATUALIZADOS PARA QUALIDADE DA CHAMADA === */
+    .quality-score {
+      font-size: 2.5rem;
+      font-weight: 700;
+      text-align: center;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #f6f8fa, #eef2f7);
+    }
+    
+    .score-excellent { color: var(--success); }
+    .score-good { color: #3b82f6; }
+    .score-fair { color: var(--warning); }
+    .score-poor { color: var(--danger); }
+    
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      margin: 15px 0;
+    }
+    
+    .metric-card {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      border-left: 4px solid #e2e8f0;
+    }
+    
+    .metric-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    
+    .metric-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    
+    .category-analysis {
+      margin: 15px 0;
+    }
+    
+    .category-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .category-content {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .category-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    
+    .strengths-box, .improvements-box {
+      padding: 12px;
+      border-radius: 8px;
+    }
+    
+    .strengths-box {
+      background: #f0fdf4;
+      border-left: 4px solid var(--success);
+    }
+    
+    .improvements-box {
+      background: #fef2f2;
+      border-left: 4px solid var(--danger);
+    }
+    
+    .strengths-list, .improvements-list {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    
+    .strengths-list li, .improvements-list li {
+      margin-bottom: 5px;
+    }
+    .transcript-example {
+      background: #f8fafc;
+      border-left: 3px solid #3b82f6;
+      padding: 8px 12px;
+      margin: 8px 0;
+      font-size: 0.85rem;
+      font-style: italic;
+      border-radius: 4px;
+    }
+    .transcript-bad {
+      background: #fef2f2;
+      border-left: 3px solid var(--danger);
+      color: var(--danger);
+    }
+    .transcript-good {
+      background: #f0fdf4;
+      border-left: 3px solid var(--success);
+      color: var(--success);
+    }
+    
+    .recommendations {
+      background: #f0f9ff;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 15px;
+      border-left: 4px solid #0ea5e9;
+    }
+    
+    .recommendations-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #0369a1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .detailed-feedback {
+      background: #fff7ed;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 10px 0;
+      border-left: 4px solid var(--warning);
+    }
+    .feedback-item {
+      margin: 8px 0;
+      padding: 8px;
+      border-radius: 6px;
+      background: #fff;
+    }
+    .feedback-good {
+      border-left: 4px solid var(--success);
+    }
+    .feedback-bad {
+      border-left: 4px solid var(--danger);
+    }
+    /* === FIM DOS ESTILOS DE QUALIDADE === */
+
+
+    /* === NOVOS ESTILOS PARA BUSCA E RESULTADOS === */
+    /* Estilos para a Busca Inteligente */
+    .search-wrapper {
+      display: flex;
+      gap: 8px;
+      align-items: stretch; /* Alinha os botões com a altura do input */
+    }
+    .search-input-group {
+      position: relative;
+      flex-grow: 1; /* Faz o grupo do input crescer */
+    }
+    .search-input-group input[type=text] {
+      padding-right: 52px; /* Espaço para o botão ícone */
+      height: 40px; /* Altura fixa para alinhamento */
+      box-sizing: border-box;
+    }
+    .search-input-group #searchBtn {
+      position: absolute;
+      right: 5px;
+      top: 5px;
+      bottom: 5px;
+      background: var(--brand);
+      border: none;
+      color: white;
+      border-radius: 6px;
+      width: 38px; /* Largura do botão */
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .search-input-group #searchBtn:hover {
+      background: #c70000; /* Cor mais escura no hover */
+    }
+    .search-input-group #searchBtn:disabled {
+       background: #ccc;
+       cursor: not-allowed;
+    }
+    
+    /* Ajusta o botão de retry para ter a mesma altura */
+    .search-wrapper > .retry {
+        height: 40px;
+        box-sizing: border-box;
+    }
+
+    /* Estilos para Resultados da Busca */
+    #searchResults {
+      height: 250px;
+      overflow: auto;
+      padding: 8px; /* Reduzido para os cards terem seu próprio espaço */
+      border-radius: 8px;
+      border: 1px solid #eef2f7;
+      background: #f8fafc; /* Fundo mais suave */
+    }
+    
+    /* Estado de "Sem resultados" ou status */
+    #searchResults > p.muted {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: calc(100% - 32px); /* Desconta o padding */
+      text-align: center;
+      font-size: 14px;
+      color: var(--muted);
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    
+    #searchResults > p.muted::before {
+      content: '📂'; /* Ícone de pasta vazia */
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      opacity: 0.5;
+    }
+    .search-results-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .search-results-list li {
+      margin: 8px; /* Margem em vez de margin-bottom para espaçar do container */
+      padding: 14px;
+      background: var(--card);
+      border-radius: 8px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+      font-size: 14px;
+      line-height: 1.5;
+      border-left: 4px solid var(--brand);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .search-results-list li:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    /* Transforma o <br> injetado pelo JS em um separador visual */
+    .search-results-list li br {
+      display: block;
+      content: "";
+      margin-top: 6px;
+    }
+    /* === FIM DOS NOVOS ESTILOS === */
+
+
+    /* Estilo para as sugestões */
+    .suggestion-item {
+      margin-bottom: 8px;
+      padding: 12px;
+      border-left: 4px solid var(--brand);
+      font-size: 14px;
+      line-height: 1.4;
+      border-radius: 6px;
+      background: var(--card);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+    }
+    .suggestion-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .high-priority {
+      border-left-color: var(--danger) !important;
+      background: #fef2f2 !important;
+      animation: pulse-high 2s infinite;
+    }
+    .medium-priority {
+      border-left-color: var(--warning) !important;
+      background: #fffbeb !important;
+    }
+    .low-priority {
+      border-left-color: var(--success) !important;
+      background: #f0fdf4 !important;
+    }
+    /* Indicador visual de prioridade */
+    .priority-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .priority-high { background: var(--danger); }
+    .priority-medium { background: var(--warning); }
+    .priority-low { background: var(--success); }
+    /* Estilo para sugestões de frase exata */
+    .exact-phrase {
+      font-weight: 600;
+      color: #111;
+      margin-top: 6px;
+      padding: 8px;
+      background: #f8fafc;
+      border-radius: 4px;
+      border-left: 3px solid var(--brand);
+    }
+    /* Animação para sugestões de alta prioridade */
+    @keyframes pulse-high {
+      0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+      70% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+    }
+    
+    @media(max-width:900px){
+      .grid{grid-template-columns:1fr;}
+      .metrics-grid{grid-template-columns: repeat(2, 1fr);}
+      .category-details{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📞 Assistente Clarinha — Apoio ao Vendedor</h1>
+  </header>
+  <main>
+    <section class="card full">
+      <strong>Resumo das melhorias aplicadas:</strong>
+      <ul class="muted">
+        <li><strong>SUGESTÕES OTIMIZADAS:</strong> IA livre para trazer a melhor sugestão sem restrições de tamanho</li>
+        <li><strong>FOCO EM AÇÃO:</strong> Cada sugestão é uma frase específica para conduzir o cliente até o fechamento</li>
+        <li><strong>ANÁLISE DE CONTEXTO AMPLIADA:</strong> A IA analisa o histórico da conversa para determinar a melhor próxima ação</li>
+        <li><strong>PRIORIZAÇÃO INTELIGENTE:</strong> Sugestões classificadas por urgência (Alta, Média, Baixa)</li>
+        <li><strong>DETECÇÃO DE CONTEXTO IMEDIATA:</strong> Identifica urgências, objeções e oportunidades em tempo real</li>
+      </ul>
+    </section>
+    <div class="grid">
+      <div>
+        <section class="card">
+          <label for="excelInput">Anexar Excel com Ofertas Atualizadas (.xlsx, .xls)</label>
+          <input id="excelInput" type="file" accept=".xlsx,.xls" aria-describedby="excelStatus" />
+          <p id="excelStatus" class="muted">Nenhum arquivo carregado.</p>
+          <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+            <button id="parseBtn">📥 Carregar & Processar</button>
+            <button id="clearExcel" class="ghost">Limpar Planilha</button>
+          </div>
+          
+          <h2>🔍 Busca Inteligente</h2>
+          <div class="search-wrapper">
+            <div class="search-input-group">
+              <input id="searchInput" type="text" placeholder="Busque por planos, benefícios, regiões ou tipos..." aria-label="Buscar oferta" />
+              <button id="searchBtn" aria-label="Buscar">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="18" height="18" style="display:block;">
+                  <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <button id="retrySearchBtn" class="retry" style="display:none">Tentar Novamente</button>
+          </div>
+          <p id="searchStatus" class="muted">Insira um termo de busca e clique em 'Buscar'.</p>
+          <h2>🗣️ Transcrição (Microfone ou Simulação)</h2>
+          <div class="controls">
+            <button id="startBtn">▶ Iniciar Escuta</button>
+            <button id="stopBtn">⏹ Parar</button>
+            <button id="finalizeBtn">🏁 Finalizar Simulação</button>
+            <button id="simulateBtn">🎭 Simular Venda</button>
+          </div>
+          <p class="muted">Observação: para simular uma venda real, anexe um áudio (.mp3/.wav). A transcrição será exibida aos poucos conforme o áudio toca, com dicas e sugestões em tempo real. Para escuta direta, use o microfone.</p>
+        </section>
+        <section class="card" style="margin-top:14px">
+          <h2>📋 Transcrição da Conversa</h2>
+          <div id="output" aria-live="polite"></div>
+          <h2 style="margin-top:14px">💡 Sugestões Inteligentes (O que falar agora)</h2>
+          <div id="suggestions"></div>
+          <button id="retryDialogueBtn" class="retry" style="display:none;margin-top:8px">🔄 Tentar Novamente</button>
+          <h2 style="margin-top:14px">📊 Qualidade da Chamada</h2>
+          <div id="callQuality"></div>
+          <button id="retryQualityBtn" class="retry" style="display:none;margin-top:8px">🔄 Tentar Novamente</button>
+        </section>
+      </div>
+      <aside>
+        <section class="card">
+          <label for="audioInput">Anexar áudio (para simulação)</label>
+          <input id="audioInput" type="file" accept="audio/wav,audio/mp3" />
+          <p id="audioStatus" class="muted">Anexe um .wav/.mp3 para simular uma venda real com dicas e sugestões.</p>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-direction:column">
+            <div class="progress" aria-hidden="true"><i></i></div>
+          </div>
+          
+          <h2 style="margin-top:14px">📄 Resultados da Busca</h2>
+          <div id="searchResults">
+            </div>
+          <h2 style="margin-top:14px">🔁 Histórico & Ações</h2>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="downloadCsv" class="ghost">Exportar ofertas CSV</button>
+          </div>
+          
+          <audio id="audioPlayer" controls style="width:100%;margin-top:14px;display:none;"></audio>
+        </section>
+      </aside>
+    </div>
+    <footer>
+      <small>Versão profissional otimizada — recomendado uso em Chrome/Edge. Integração com transcrição via reconhecimento de voz do navegador e AssemblyAI para simulações de vendas reais com dicas. Busca inteligente com IA restrita ao Excel.</small>
+    </footer>
+  </main>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const App = {
+        config: {
+          GROQ_API_KEY: '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',
+          GROQ_API_ENDPOINT: 'https://api.groq.com/openai/v1/chat/completions',
+          API_MODEL: 'llama-3.1-8b-instant',
+          ASSEMBLYAI_API_KEY: '322d5e9264e7409f8bc09733c2c08d85',
+          ASSEMBLYAI_BASE_URL: 'https://api.assemblyai.com/v2',
+          DEBOUNCE_SEARCH_MS: 3000,
+          DEBOUNCE_DIALOGUE_MS: 2500,
+          MAX_EXCEL_TEXT_LENGTH: 60000,
+          MAX_FILTERED_TEXT_LENGTH: 10000,
+          MAX_TRANSCRIPT_BUFFER_LENGTH: 1500,
+          TRUNCATE_TRANSCRIPT_TO_LENGTH: 800,
+          BATCH_ANALYSIS_INTERVAL: 8000,
+          MAX_API_CALLS_PER_MINUTE: 15,
+          AUDIO_TRANSCRIPTION_TIMEOUT_MS: 30000,
+          AUDIO_TRANSCRIPTION_RETRIES: 3,
+          AUDIO_TRANSCRIPTION_BACKOFF_MS: 2000,
+          ASSEMBLYAI_POLLING_INTERVAL: 500,
+          MIN_TRANSCRIPT_LENGTH: 30,
+          DIALOGUE_COOLDOWN_MS: 10000,
+          RECENT_WORDS_COUNT: 8
+        },
+        state: {
+          excelRows: [],
+          excelRawText: '',
+          transcriptBuffer: '',
+          currentTranscript: '',
+          transcriptBatch: [],
+          recognition: null,
+          micStream: null,
+          isListening: false,
+          isSimulating: false,
+          simulationAudio: null,
+          searchCache: new Map(),
+          dialogueCache: new Map(),
+          apiCallCount: 0,
+          lastApiCallReset: Date.now(),
+          rateLimitPaused: false,
+          pollingInterval: null,
+          transcriptId: null,
+          timedWords: [],
+          displayedWordIndex: 0,
+          lastDialogueAnalysis: 0,
+          pendingAnalysis: false,
+          lastWordsBuffer: '',
+          fallbackSuggestions: [
+            "Maravilha Maria! você chegou no lugar certo.",
+            "Me conta uma coisa hoje você já possui internet local?, De qual operadora e qual valor paga mensamente?",
+            "Você quer viver uma nova experiência ao assistir TV, tenho uma solution maravilhosa para você e sua família",
+            "Me diz uma coisa, hoje qual valor você paga na Sky?, O que você e sua família mais assistem, qual tipo de conteúdo (filmes, desenhos, esportes, séries)?, Você paga separadamente pela NETFLIX, PRIME, DISNEY?.",
+            "Você tem algum ponto opcional? .",
+            "Entendi que seu investimento é alto, estamos falando aqui de R$150,00 que é dividido por 2, certo?.",
+            "Falando da INTERNET que é o que te trouxe aqui, deixa eu entender melhor.",
+            "Sempre que você sai de casa você usa wifi do lugar onde você está ou os dados móvel do seu celular?, Você me disse que seu plano móvel é da TIM e qual operadora do seu esposo?.",
+            "Me passa o nº do seu esposo para que eu avalie se a linha está no nome dele ou no seu, assim consigo avaliar aqui um plano incrível para vocês.",
+            "Já reservei aqui o que há de mais moderno quando o assunto é CONTEUDO: são 120 canais entre fechados e abertos para assistir, onde, como e quando quiser, 6 streamings que já estão INCLUSOS no plano...",
+            "INCRÍVEL NÉ? Não para por aí, além disso para a Internet separei 600MB também com Globoplay inclusa .",
+            "E ainda para não deixar as 2 linhas móvel de fora, vamos colocar um plano no precinho e com muitos benefícios para você e seu esposo.",
+            "E o melhor de tudo, o INVESTIMENTO que cabe no seu bolso e ainda te fará ter uma economia no ano de R$444,00.",
+            "Você prefere a instalação para período da manhã ou da tarde? Como você ainda vai se mudar, podemos agendar a visita técnica 2 dias antes da mudança, assim garantimos que você se mude já com tudo funcionando.",
+            "Vamos fazer o seguinte, como eu tenho o nº dele aqui posso fazer uma chamada a 3, assim posso explicar para ele sobre o investimento e ainda garantir esta oferta que é só por hoje.",
+            "De qualquer forma o menino sabe que você vai se mudar, então com certeza já está esperando pagar a internet sozinho, então não perca esta oportunidade que só está vigente para esta ligação.",
+            "Infelizmente não, porque é uma Central de Vendas, o melhor é já gerarmos o seu contrato, garantindo os valores e ainda a data para o dia que você poderá receber nosso técnico.",
+            "Entendo que não queira se comprometer, deixo nossa central a sua disposição quando decidir então, a Claro agradece a sua ligação."
+          ]
+        },
+        elements: {},
+        init() {
+          this.cacheElements();
+          this.registerEventHandlers();
+          this.setupSpeechRecognition();
+          this.setupBatchAnalysis();
+          this.ui.prependSuggestion({ text: 'Sistema pronto. Carregue um Excel ou áudio para começar.' });
+          this.ui.updateComponentStates();
+          this.api.debouncedSearchOffer = this.utils.debounce(this.api.localSearch.bind(this.api), this.config.DEBOUNCE_SEARCH_MS);
+          this.api.debouncedAnalyzeDialogue = this.utils.debounce(this.api.analyzeDialogue.bind(this.api), this.config.DEBOUNCE_DIALOGUE_MS);
+          setInterval(() => {
+            this.state.apiCallCount = 0;
+            this.state.lastApiCallReset = Date.now();
+            this.state.rateLimitPaused = false;
+            this.ui.updateComponentStates();
+          }, 60000);
+        },
+        cacheElements() {
+          const ids = [
+            'excelInput', 'parseBtn', 'clearExcel', 'excelStatus', 'searchBtn', 'searchInput',
+            'searchResults', 'searchStatus', 'startBtn', 'stopBtn', 'finalizeBtn', 'simulateBtn',
+            'output', 'suggestions', 'callQuality', 'audioInput', 'audioStatus', 'downloadCsv',
+            'retrySearchBtn', 'retryDialogueBtn', 'retryQualityBtn', 'audioPlayer'
+          ];
+          ids.forEach(id => (this.elements[id] = document.getElementById(id)));
+          this.elements.progressBar = document.querySelector('.progress > i');
+        },
+        ui: {
+          updateComponentStates() {
+            const state = App.state;
+            const elements = App.elements;
+            const hasExcel = state.excelRows.length > 0;
+            const hasAudio = elements.audioInput.files.length > 0;
+            const hasTranscript = state.transcriptBuffer.trim().length > 0;
+            elements.parseBtn.disabled = !elements.excelInput.files.length || hasExcel;
+            elements.clearExcel.disabled = !hasExcel;
+            elements.downloadCsv.disabled = !hasExcel;
+            elements.startBtn.disabled = state.isListening || state.rateLimitPaused;
+            elements.stopBtn.disabled = !state.isListening;
+            elements.finalizeBtn.disabled = state.isListening || !hasTranscript || state.rateLimitPaused;
+            elements.simulateBtn.disabled = !hasAudio || state.isListening || state.rateLimitPaused;
+            elements.searchBtn.disabled = !hasExcel || state.rateLimitPaused;
+            elements.retrySearchBtn.style.display = state.rateLimitPaused ? 'inline-block' : 'none';
+            elements.retryDialogueBtn.style.display = state.rateLimitPaused ? 'inline-block' : 'none';
+            elements.retryQualityBtn.style.display = state.rateLimitPaused ? 'inline-block' : 'none';
+          },
+          setProgress(pct) {
+            App.elements.progressBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+          },
+          appendOutput(role, text) {
+            const p = document.createElement('div');
+            p.style.marginBottom = '8px';
+            p.innerHTML = `<strong>${role}:</strong> <span>${this.escapeHtml(text)}</span>`;
+            App.elements.output.appendChild(p);
+            App.elements.output.scrollTop = App.elements.output.scrollHeight;
+            
+            App.utils.updateLastWordsBuffer(text);
+          },
+          appendTranscriptChunk(chunk) {
+            if (!chunk.trim()) return;
+            const span = document.createElement('span');
+            span.style.opacity = '0.8';
+            span.innerHTML = this.escapeHtml(chunk) + ' ';
+            App.elements.output.appendChild(span);
+            App.elements.output.scrollTop = App.elements.output.scrollHeight;
+            App.state.transcriptBuffer += chunk + ' ';
+            
+            App.utils.updateLastWordsBuffer(chunk);
+          },
+          prependSuggestion(response, cacheKey) {
+            const div = document.createElement('div');
+            div.className = 'suggestion-item';
+            let priorityClass = 'low-priority';
+            let priorityIndicatorClass = 'priority-low';
+            
+            if (response.priority === 'high' || (response.dicas && response.dicas[0] && response.dicas[0].priority === 'high')) {
+              priorityClass = 'high-priority';
+              priorityIndicatorClass = 'priority-high';
+            } else if (response.priority === 'medium' || (response.dicas && response.dicas[0] && response.dicas[0].priority === 'medium')) {
+              priorityClass = 'medium-priority';
+              priorityIndicatorClass = 'priority-medium';
+            }
+            div.classList.add(priorityClass);
+            const lines = [];
+            
+            if (response.dicas && Array.isArray(response.dicas)) {
+              
+              const primeiraDica = response.dicas.find(d => d.tipo && d.frase);
+              if (primeiraDica) {
+                
+                const frase = this.escapeHtml(primeiraDica.frase);
+                const tipo = this.escapeHtml(primeiraDica.tipo || 'Dica'); // Pega o tipo, com fallback
+                
+                const currentPriorityClass = (primeiraDica.priority === 'high') ? 'priority-high' : (primeiraDica.priority === 'medium') ? 'priority-medium' : 'priority-low';
+                const priorityIndicator = `<span class="priority-indicator ${currentPriorityClass}"></span>`;
+                
+                // NOVO: Adiciona o TIPO da sugestão com ícone
+                let tipoDisplay = '';
+                if (tipo === 'Sondagem') tipoDisplay = 'Clarinha:🔍 Sondagem';
+                else if (tipo === 'Contorno de Objeção') tipoDisplay = 'Clarinha:🛡️ Contorno de Objeção';
+                else if (tipo === 'Argumento') tipoDisplay = 'Clarinha:💬 Argumento';
+                else if (tipo === 'Fechamento') tipoDisplay = 'Clarinha:⚡ Fechamento';
+                else tipoDisplay = `💡 ${tipo}`; // Fallback para tipos antigos ou inesperados
+                
+                // Mostra o tipo da dica
+                lines.push(`${priorityIndicator}<strong>${tipoDisplay}</strong>`);
+                // Mostra a frase exata
+                lines.push(`<div class="exact-phrase">"${frase}"</div>`);
+              }
+            }
+            else if (response.text) {
+              lines.push(`<span class="priority-indicator priority-low"></span><strong>💡 Clarinha:</strong>`);
+              lines.push(`<div class="exact-phrase">"${this.escapeHtml(response.text)}"</div>`);
+            }
+            if (lines.length > 0) {
+                div.innerHTML = lines.join('');
+            
+                if (App.elements.suggestions.firstChild) {
+                  App.elements.suggestions.insertBefore(div, App.elements.suggestions.firstChild);
+                } else {
+                  App.elements.suggestions.appendChild(div);
+                }
+                
+                const suggestions = App.elements.suggestions.children;
+                if (suggestions.length > 5) {
+                  App.elements.suggestions.removeChild(suggestions[suggestions.length - 1]);
+                }
+                
+                App.elements.suggestions.scrollTop = 0;
+                if (cacheKey) {
+                  App.state.dialogueCache.set(cacheKey, response);
+                }
+            }
+          },
+          
+          // === FUNÇÃO RE-ADICIONADA PARA RENDERIZAR A QUALIDADE ===
+          renderQualityAnalysis(analysis) {
+            const container = App.elements.callQuality;
+            container.innerHTML = '';
+            
+            // Score principal
+            const scoreDiv = document.createElement('div');
+            scoreDiv.className = 'quality-score';
+            
+            let scoreClass = 'score-poor';
+            if (analysis.score >= 80) scoreClass = 'score-excellent';
+            else if (analysis.score >= 70) scoreClass = 'score-good';
+            else if (analysis.score >= 60) scoreClass = 'score-fair';
+            
+            scoreDiv.className += ` ${scoreClass}`;
+            scoreDiv.innerHTML = `${analysis.score}/100`;
+            container.appendChild(scoreDiv);
+            
+            // Métricas
+            if (analysis.metrics) {
+              const metricsGrid = document.createElement('div');
+              metricsGrid.className = 'metrics-grid';
+              
+              analysis.metrics.forEach(metric => {
+                const metricCard = document.createElement('div');
+                metricCard.className = 'metric-card';
+                
+                const metricValue = document.createElement('div');
+                metricValue.className = 'metric-value';
+                metricValue.textContent = metric.value;
+                
+                const metricLabel = document.createElement('div');
+                metricLabel.className = 'metric-label';
+                metricLabel.textContent = metric.label;
+                
+                metricCard.appendChild(metricValue);
+                metricCard.appendChild(metricLabel);
+                metricsGrid.appendChild(metricCard);
+              });
+              
+              container.appendChild(metricsGrid);
+            }
+            // Feedback detalhado com exemplos da transcrição
+            if (analysis.detailedFeedback) {
+              const feedbackDiv = document.createElement('div');
+              feedbackDiv.className = 'detailed-feedback';
+              
+              const feedbackTitle = document.createElement('div');
+              feedbackTitle.className = 'category-title';
+              feedbackTitle.innerHTML = '📝 <span>Análise Detalhada por Métrica</span>';
+              feedbackDiv.appendChild(feedbackTitle);
+              
+              analysis.detailedFeedback.forEach(feedback => {
+                const feedbackItem = document.createElement('div');
+                feedbackItem.className = `feedback-item ${feedback.type === 'good' ? 'feedback-good' : 'feedback-bad'}`;
+                
+                const title = document.createElement('div');
+                title.style.fontWeight = '600';
+                title.style.marginBottom = '5px';
+                title.innerHTML = feedback.type === 'good' ? '✅ ' : '❌ ';
+                title.innerHTML += feedback.title;
+                
+                const description = document.createElement('div');
+                description.style.fontSize = '0.9rem';
+                description.textContent = feedback.description;
+                
+                feedbackItem.appendChild(title);
+                feedbackItem.appendChild(description);
+                
+                if (feedback.examples && feedback.examples.length > 0) {
+                  const examplesDiv = document.createElement('div');
+                  examplesDiv.style.marginTop = '8px';
+                  
+                  feedback.examples.forEach(example => {
+                    const exampleDiv = document.createElement('div');
+                    exampleDiv.className = `transcript-example ${feedback.type === 'good' ? 'transcript-good' : 'transcript-bad'}`;
+                    exampleDiv.innerHTML = `<strong>Exemplo:</strong> "${this.escapeHtml(example)}"`;
+                    examplesDiv.appendChild(exampleDiv);
+                  });
+                  
+                  feedbackItem.appendChild(examplesDiv);
+                }
+                
+                feedbackDiv.appendChild(feedbackItem);
+              });
+              
+              container.appendChild(feedbackDiv);
+            }
+            
+            // Pontos Fortes (se a IA ainda os enviar)
+            if (analysis.strengths && analysis.strengths.length > 0) {
+              const strengthsDiv = document.createElement('div');
+              strengthsDiv.className = 'category-analysis';
+              
+              const strengthsTitle = document.createElement('div');
+              strengthsTitle.className = 'category-title';
+              strengthsTitle.innerHTML = '✅ <span>Pontos Fortes Gerais</span>';
+              
+              const strengthsContent = document.createElement('div');
+              strengthsContent.className = 'category-content';
+              
+              const strengthsList = document.createElement('ul');
+              strengthsList.className = 'strengths-list';
+              
+              analysis.strengths.forEach(strength => {
+                const li = document.createElement('li');
+                li.textContent = this.escapeHtml(strength);
+                strengthsList.appendChild(li);
+              });
+              
+              strengthsContent.appendChild(strengthsList);
+              strengthsDiv.appendChild(strengthsTitle);
+              strengthsDiv.appendChild(strengthsContent);
+              container.appendChild(strengthsDiv);
+            }
+            
+            // Áreas de Melhoria (se a IA ainda os enviar)
+            if (analysis.improvements && analysis.improvements.length > 0) {
+              const improvementsDiv = document.createElement('div');
+              improvementsDiv.className = 'category-analysis';
+              
+              const improvementsTitle = document.createElement('div');
+              improvementsTitle.className = 'category-title';
+              improvementsTitle.innerHTML = '📈 <span>Áreas de Melhoria Gerais</span>';
+              
+              const improvementsContent = document.createElement('div');
+              improvementsContent.className = 'category-content';
+              
+              const improvementsList = document.createElement('ul');
+              improvementsList.className = 'improvements-list';
+              
+              analysis.improvements.forEach(improvement => {
+                const li = document.createElement('li');
+                li.textContent = this.escapeHtml(improvement);
+                improvementsList.appendChild(li);
+              });
+              
+              improvementsContent.appendChild(improvementsList);
+              improvementsDiv.appendChild(improvementsTitle);
+              improvementsDiv.appendChild(improvementsContent);
+              container.appendChild(improvementsDiv);
+            }
+            
+            // Recomendações
+            if (analysis.recommendations && analysis.recommendations.length > 0) {
+              const recommendationsDiv = document.createElement('div');
+              recommendationsDiv.className = 'recommendations';
+              
+              const recommendationsTitle = document.createElement('div');
+              recommendationsTitle.className = 'recommendations-title';
+              recommendationsTitle.innerHTML = '🎯 <span>Recomendações para Próxima Chamada</span>';
+              
+              const recommendationsList = document.createElement('ul');
+              recommendationsList.className = 'improvements-list';
+              
+              analysis.recommendations.forEach(recommendation => {
+                const li = document.createElement('li');
+                li.textContent = this.escapeHtml(recommendation);
+                recommendationsList.appendChild(li);
+              });
+              
+              recommendationsDiv.appendChild(recommendationsTitle);
+              recommendationsDiv.appendChild(recommendationsList);
+              container.appendChild(recommendationsDiv);
+            }
+          },
+          
+          escapeHtml(s) {
+            return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+          }
+        },
+        registerEventHandlers() {
+          // Event handlers para Excel
+          this.elements.parseBtn.addEventListener('click', () => this.handlers.onParseExcel());
+          this.elements.clearExcel.addEventListener('click', () => this.handlers.onClearExcel());
+          this.elements.downloadCsv.addEventListener('click', () => this.handlers.onDownloadCsv());
+          
+          // Event handlers para busca
+          this.elements.searchBtn.addEventListener('click', () => this.handlers.onSearch());
+          this.elements.searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              this.handlers.onSearch();
+            }
+          });
+          this.elements.retrySearchBtn.addEventListener('click', () => this.handlers.onRetrySearch());
+          
+          // Event handlers para áudio e transcrição
+          this.elements.startBtn.addEventListener('click', () => this.handlers.onStartListening());
+          this.elements.stopBtn.addEventListener('click', () => this.handlers.onStopListening());
+          this.elements.finalizeBtn.addEventListener('click', () => this.handlers.onFinalize());
+          this.elements.simulateBtn.addEventListener('click', () => this.handlers.onSimulate());
+          
+          // Event handlers para retry
+          this.elements.retryDialogueBtn.addEventListener('click', () => this.handlers.onRetryDialogue());
+          this.elements.retryQualityBtn.addEventListener('click', () => this.handlers.onRetryQuality());
+          
+          // Event handlers para arquivos
+          this.elements.excelInput.addEventListener('change', () => this.handlers.onFileSelect());
+          this.elements.audioInput.addEventListener('change', () => this.handlers.onFileSelect());
+        },
+        handlers: {
+          onFileSelect() {
+            App.ui.updateComponentStates();
+          },
+          async onParseExcel() {
+            const file = App.elements.excelInput.files[0];
+            if (!file) {
+              App.elements.excelStatus.textContent = 'Selecione um arquivo Excel.';
+              return;
+            }
+            try {
+              App.elements.excelStatus.textContent = 'Lendo arquivo...';
+              App.ui.setProgress(10);
+              const arrayBuffer = await file.arrayBuffer();
+              const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+              const sheet = workbook.Sheets[workbook.SheetNames[0]];
+              App.state.excelRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+              App.state.excelRawText = JSON.stringify(App.state.excelRows).slice(0, App.config.MAX_EXCEL_TEXT_LENGTH);
+              App.elements.excelStatus.textContent = `Planilha carregada: ${App.state.excelRows.length} linhas processadas.`;
+              App.ui.setProgress(100);
+              App.state.searchCache.clear();
+              App.state.dialogueCache.clear();
+            } catch (err) {
+              App.elements.excelStatus.textContent = `Erro ao processar Excel: ${err.message}`;
+              App.ui.setProgress(0);
+            } finally {
+              App.ui.updateComponentStates();
+            }
+          },
+          onClearExcel() {
+            App.state.excelRows = [];
+            App.state.excelRawText = '';
+            App.elements.excelInput.value = '';
+            App.elements.excelStatus.textContent = 'Nenhum arquivo carregado.';
+            App.elements.searchResults.innerHTML = '';
+            App.state.searchCache.clear();
+            App.state.dialogueCache.clear();
+            App.ui.setProgress(0);
+            App.ui.updateComponentStates();
+          },
+          onDownloadCsv() {
+            if (!App.state.excelRows.length) return;
+            const cols = Object.keys(App.state.excelRows[0]);
+            const csv = [cols.join(',')].concat(App.state.excelRows.map(r => cols.map(c => '"' + String(r[c]).replace(/"/g, '""') + '"').join(','))).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ofertas_export.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+          },
+          onSearch() {
+            const query = (App.elements.searchInput.value || '').trim();
+            App.elements.searchResults.innerHTML = '';
+            if (!query) {
+              App.elements.searchStatus.textContent = 'Digite um termo para busca.';
+              return;
+            }
+            if (!App.state.excelRows.length) {
+              App.elements.searchStatus.textContent = 'Nenhum Excel processado. Faça upload primeiro.';
+              return;
+            }
+            App.elements.searchStatus.textContent = 'Buscando...';
+            App.ui.setProgress(10);
+            App.api.debouncedSearchOffer(query);
+          },
+          onRetrySearch() {
+            App.state.rateLimitPaused = false;
+            App.ui.updateComponentStates();
+            this.onSearch();
+          },
+          onRetryDialogue() {
+            App.state.rateLimitPaused = false;
+            App.ui.updateComponentStates();
+            App.api.analyzeDialogue(App.state.transcriptBuffer, true);
+          },
+          onRetryQuality() {
+            App.state.rateLimitPaused = false;
+            App.ui.updateComponentStates();
+            App.api.analyzeCallQuality(App.state.transcriptBuffer);
+          },
+          async onStartListening() {
+            if (!App.state.recognition) {
+              App.ui.prependSuggestion({ text: 'Reconhecimento de voz não está disponível neste navegador.' });
+              return;
+            }
+            try {
+              App.state.micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true } });
+              App.state.recognition.start();
+              App.state.isListening = true;
+              App.ui.prependSuggestion({ text: 'Escuta ativa iniciada. Fale naturalmente.'});
+            } catch (err) {
+              App.ui.prependSuggestion({ text: `Erro ao acessar microfone: ${err.message}` });
+            } finally {
+              App.ui.updateComponentStates();
+            }
+          },
+          onStopListening() {
+            if (App.state.recognition) App.state.recognition.stop();
+            if (App.state.micStream) App.state.micStream.getTracks().forEach(t => t.stop());
+            if (App.state.simulationAudio) {
+              App.state.simulationAudio.pause();
+              App.state.simulationAudio = null;
+            }
+            if (App.state.pollingInterval) {
+              clearInterval(App.state.pollingInterval);
+              App.state.pollingInterval = null;
+            }
+            App.state.isListening = false;
+            App.state.isSimulating = false;
+            if (App.state.transcriptId) {
+              App.state.transcriptId = null;
+            }
+            App.state.timedWords = [];
+            App.state.displayedWordIndex = 0;
+            App.ui.prependSuggestion({ text: 'Escuta parada. Você pode finalizar a simulação.' });
+            App.ui.updateComponentStates();
+          },
+          async onFinalize() {
+            if (!App.state.transcriptBuffer) {
+              App.elements.callQuality.innerHTML = '<div class="muted">Nenhuma conversa capturada para análise.</div>';
+              return;
+            }
+            await App.api.analyzeCallQuality(App.state.transcriptBuffer);
+            App.elements.output.innerHTML = '<div class="muted">Simulação finalizada e analisada.</div>';
+            App.ui.updateComponentStates();
+          },
+          onAudioTimeUpdate() {
+            const currentTimeMs = App.state.simulationAudio.currentTime * 1000;
+            let newText = '';
+            while (App.state.displayedWordIndex < App.state.timedWords.length && App.state.timedWords[App.state.displayedWordIndex].start <= currentTimeMs) {
+              newText += App.state.timedWords[App.state.displayedWordIndex].text + ' ';
+              App.state.displayedWordIndex++;
+            }
+            if (newText) {
+              App.ui.appendTranscriptChunk(newText.trim());
+              App.state.transcriptBatch.push(newText.trim());
+            }
+          },
+          async onSimulate() {
+            if (App.state.isSimulating) return;
+            const file = App.elements.audioInput.files[0];
+            if (!file) {
+              App.elements.audioStatus.textContent = 'Selecione um arquivo de áudio para simular.';
+              return;
+            }
+            App.state.isSimulating = true;
+            App.state.isListening = true;
+            App.state.transcriptBuffer = '';
+            App.state.currentTranscript = '';
+            App.state.timedWords = [];
+            App.state.displayedWordIndex = 0;
+            App.elements.output.innerHTML = '';
+            App.state.transcriptId = null;
+            App.state.pollingInterval = null;
+            App.ui.prependSuggestion({ text: 'Iniciando simulação de venda real com transcrição gradual e dicas...' });
+            App.elements.audioStatus.textContent = 'Fazendo upload e transcrevendo áudio...' ;
+            App.ui.setProgress(10);
+            App.ui.updateComponentStates();
+            const audioURL = URL.createObjectURL(file);
+            App.elements.audioPlayer.src = audioURL;
+            App.elements.audioPlayer.style.display = 'block';
+            try {
+              const uploadUrl = await App.api.uploadAudioToAssemblyAI(file);
+              App.ui.setProgress(30);
+              const transcriptId = await App.api.startAssemblyAITranscription(uploadUrl);
+              App.state.transcriptId = transcriptId;
+              App.elements.audioStatus.textContent = 'Processando transcrição...';
+              App.ui.setProgress(50);
+              App.state.pollingInterval = setInterval(async () => {
+                try {
+                  const transcript = await App.api.pollAssemblyAITranscript(transcriptId);
+                  if (transcript.status === 'completed') {
+                    clearInterval(App.state.pollingInterval);
+                    App.state.pollingInterval = null;
+                    App.elements.audioStatus.textContent = 'Transcrição concluída. Iniciando simulação...';
+                    App.ui.setProgress(80);
+                    App.state.timedWords = transcript.words || [];
+                    App.state.simulationAudio = App.elements.audioPlayer;
+                    App.state.simulationAudio.addEventListener('timeupdate', () => this.onAudioTimeUpdate());
+                    App.state.simulationAudio.play();
+                    App.ui.setProgress(100);
+                  } else if (transcript.status === 'error') {
+                    throw new Error(transcript.error || 'Erro na transcrição');
+                  }
+                } catch (pollErr) {
+                  console.warn('Erro no polling:', pollErr);
+                }
+              }, App.config.ASSEMBLYAI_POLLING_INTERVAL);
+            } catch (err) {
+              const errorMessage = err.message.includes('Failed to fetch') || err.message.includes('network')
+                ? 'Não foi possível conectar ao servidor da AssemblyAI. Verifique a conexão de rede e tente novamente.'
+                : `Erro na transcrição com AssemblyAI: ${err.message}`;
+              App.elements.audioStatus.textContent = errorMessage;
+              App.ui.prependSuggestion({ text: errorMessage });
+              App.ui.setProgress(0);
+              this.onStopListening();
+            } finally {
+              App.elements.audioPlayer.onended = () => {
+                if (App.state.pollingInterval) {
+                  clearInterval(App.state.pollingInterval);
+                  App.state.pollingInterval = null;
+                }
+                App.state.isSimulating = false;
+                App.state.isListening = false;
+                App.ui.updateComponentStates();
+                setTimeout(() => App.ui.setProgress(0), 1500);
+                URL.revokeObjectURL(audioURL);
+              };
+            }
+          },
+          onRecognitionResult(event) {
+            let interim = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              const result = event.results[i];
+              if (result.isFinal) {
+                App.state.transcriptBuffer += result[0].transcript + ' ';
+                App.state.transcriptBatch.push(result[0].transcript);
+                App.ui.appendOutput('Voz', result[0].transcript);
+                
+                App.utils.updateLastWordsBuffer(result[0].transcript);
+                
+                // Aciona a análise mais rápido, com menos palavras
+                if (App.state.lastWordsBuffer.split(' ').length >= 5) {
+                  App.api.analyzeRecentDialogue();
+                }
+              } else {
+                interim += result[0].transcript;
+              }
+            }
+            const interimEl = App.elements.output.querySelector('.__interim');
+            if (interimEl) interimEl.remove();
+            if (interim) {
+              const p = document.createElement('div');
+              p.className = '__interim';
+              p.style.opacity = 0.7;
+              p.innerHTML = `<em>... ${App.ui.escapeHtml(interim)}</em>`;
+              App.elements.output.appendChild(p);
+            }
+          },
+          onRecognitionError(event) {
+            console.warn('SpeechRecognition error', event);
+            App.ui.prependSuggestion({ text: `Erro de microfone: ${event.error || 'desconhecido'}` });
+          }
+        },
+        setupSpeechRecognition() {
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (!SpeechRecognition) {
+            App.ui.prependSuggestion({ text: 'Reconhecimento de voz não é suportado neste navegador. Use Chrome ou Edge.' });
+            return;
+          }
+          App.state.recognition = new SpeechRecognition();
+          Object.assign(App.state.recognition, {
+            lang: 'pt-BR',
+            interimResults: true,
+            continuous: true,
+          });
+          App.state.recognition.onresult = (event) => App.handlers.onRecognitionResult(event);
+          App.state.recognition.onerror = (event) => App.handlers.onRecognitionError(event);
+          App.state.recognition.onend = () => {
+            if (App.state.isListening && !App.state.isSimulating) {
+              App.state.recognition.start();
+            }
+          };
+        },
+        setupBatchAnalysis() {
+          setInterval(() => {
+            const now = Date.now();
+            if (App.state.transcriptBatch.length > 0 &&
+                App.state.transcriptBuffer.length > App.config.MIN_TRANSCRIPT_LENGTH &&
+                !App.state.rateLimitPaused &&
+                !App.state.pendingAnalysis &&
+                (now - App.state.lastDialogueAnalysis) > App.config.DIALOGUE_COOLDOWN_MS) {
+              
+              const batchText = App.state.transcriptBatch.join(' ');
+              App.state.transcriptBatch = [];
+              App.state.lastDialogueAnalysis = now;
+              App.state.pendingAnalysis = true;
+              
+              App.api.analyzeDialogue(batchText).finally(() => {
+                App.state.pendingAnalysis = false;
+              });
+            }
+          }, App.config.BATCH_ANALYSIS_INTERVAL);
+        },
+        api: {
+          debouncedSearchOffer: null,
+          debouncedAnalyzeDialogue: null,
+          async checkRateLimit() {
+            if (App.state.apiCallCount >= App.config.MAX_API_CALLS_PER_MINUTE) {
+              App.state.rateLimitPaused = true;
+              App.ui.updateComponentStates();
+              return false;
+            }
+            App.state.apiCallCount++;
+            return true;
+          },
+          async fetchWithRetry(url, options, retries = App.config.AUDIO_TRANSCRIPTION_RETRIES, backoff = App.config.AUDIO_TRANSCRIPTION_BACKOFF_MS) {
+            try {
+              if (!await this.checkRateLimit()) {
+                throw new Error('Limite de requisições excedido localmente.');
+              }
+              const res = await fetch(url, options);
+              if (res.status === 429 && retries > 0) {
+                const cappedBackoff = Math.min(backoff, 10000);
+                console.log(`Rate limit hit (429). Retrying in ${cappedBackoff / 1000}s... (${retries} retries left)`);
+                await new Promise(resolve => setTimeout(resolve, cappedBackoff));
+                return this.fetchWithRetry(url, options, retries - 1, cappedBackoff * 2);
+              }
+              if (!res.ok) throw new Error(`Erro na API: ${res.status} ${res.statusText}`);
+              return res.json();
+            } catch (err) {
+              if (retries > 0 && !err.message.includes('localmente')) {
+                const cappedBackoff = Math.min(backoff, 10000);
+                console.log(`Error: ${err.message}. Retrying in ${cappedBackoff / 1000}s... (${retries} retries left)`);
+                await new Promise(resolve => setTimeout(resolve, cappedBackoff));
+                return this.fetchWithRetry(url, options, retries - 1, cappedBackoff * 2);
+              }
+              throw err;
+            }
+          },
+          async uploadAudioToAssemblyAI(file) {
+            const response = await this.fetchWithRetry(`${App.config.ASSEMBLYAI_BASE_URL}/upload`, {
+              method: 'POST',
+              headers: {
+                'Authorization': App.config.ASSEMBLYAI_API_KEY
+              },
+              body: file
+            });
+            return response.upload_url;
+          },
+          async startAssemblyAITranscription(uploadUrl) {
+            const body = {
+              audio_url: uploadUrl,
+              language_code: 'pt',
+              speech_model: 'universal',
+              punctuate: true,
+              format_text: true
+            };
+            const response = await this.fetchWithRetry(`${App.config.ASSEMBLYAI_BASE_URL}/transcript`, {
+              method: 'POST',
+              headers: {
+                'Authorization': App.config.ASSEMBLYAI_API_KEY,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(body)
+            });
+            return response.id;
+          },
+          async pollAssemblyAITranscript(transcriptId) {
+            const response = await this.fetchWithRetry(`${App.config.ASSEMBLYAI_BASE_URL}/transcript/${transcriptId}`, {
+              method: 'GET',
+              headers: {
+                'Authorization': App.config.ASSEMBLYAI_API_KEY
+              }
+            });
+            return response;
+          },
+          async localSearch(query) {
+            if (!App.state.excelRows.length) return false;
+            const cacheKey = App.utils.simpleHash(query);
+            if (App.state.searchCache.has(cacheKey) ) {
+              const result = App.state.searchCache.get(cacheKey);
+              const lines = result.split('\n').filter(line => line.trim());
+              if (lines.length === 0) {
+                App.elements.searchResults.innerHTML = '<p class="muted">Nenhuma oferta encontrada para os termos informados.</p>';
+              } else {
+                const ul = document.createElement('ul');
+                ul.className = 'search-results-list';
+                lines.forEach(line => {
+                  const li = document.createElement('li');
+                  li.innerHTML = App.ui.escapeHtml(line).replace(/ - /g, '<br>');
+                  ul.appendChild(li);
+                });
+                App.elements.searchResults.appendChild(ul);
+              }
+              App.elements.searchStatus.textContent = 'Busca concluída (cache).';
+              App.ui.setProgress(100);
+              return true;
+            }
+            const prompt = `
+Você é um especialista em vendas da Claro. Baseado EXCLUSIVAMENTE nas ofertas fornecidas: "${App.state.excelRawText.slice(0, 5000)}", encontre até 3 ofertas mais relevantes para a consulta "${query}". Considere correspondências semânticas (ex.: "filmes" pode corresponder a "Netflix", "barato" a valores baixos). Identifique dinamicamente as colunas correspondentes a "cidade" (ex.: cidade, local, região) e "tipo" (ex.: tipo, plano, combinado, indicando se é combinado ou single). Se essas colunas não existirem, retorne "N/A" para o campo. Para cada oferta, forneça nome, valor, cidade, tipo (combinado ou single) e um argumento de venda curto (50-100 chars) destacando o valor da oferta, no formato:
+"Oferta: [nome] - Valor: [valor] - Cidade: [cidade] - Tipo: [combinado/single]. Argumento: [texto]"
+Retorne APENAS as linhas no formato especificado, separadas por "\n". Se não houver correspondências, retorne vazio. Exemplo:
+"Oferta: Claro 50GB - Valor: 99.90 - Cidade: São Paulo - Tipo: Combinado. Argumento: Claro com Netflix incluso!"
+`;
+            
+            try {
+              const data = await this.fetchWithRetry(App.config.GROQ_API_ENDPOINT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${App.config.GROQ_API_KEY}` },
+                body: JSON.stringify({
+                  model: App.config.API_MODEL, messages: [{ role: "user", content: prompt }], max_tokens: 200
+                })
+              });
+              if (!data.choices || !data.choices[0]) throw new Error("Resposta da API inválida");
+              const result = data.choices[0].message.content.trim();
+              const lines = result.split('\n').filter(line => line.trim());
+              if (lines.length === 0) {
+                App.elements.searchResults.innerHTML = '<p class="muted">Nenhuma oferta encontrada para os termos informados.</p>';
+              } else {
+                const ul = document.createElement('ul');
+                ul.className = 'search-results-list';
+                lines.forEach(line => {
+                  const li = document.createElement('li');
+                  li.innerHTML = App.ui.escapeHtml(line).replace(/ - /g, '<br>');
+                  ul.appendChild(li);
+                });
+                App.elements.searchResults.appendChild(ul);
+              }
+              App.state.searchCache.set(cacheKey, result);
+              App.elements.searchStatus.textContent = 'Busca concluída.';
+              App.ui.setProgress(100);
+              return true;
+            } catch (err) {
+              App.elements.searchStatus.textContent = err.message.includes('429') || err.message.includes('localmente')
+                ? 'Limite de requisições excedido. Use o botão "Tentar Novamente".'
+                : `Erro na busca: ${err.message}`;
+              App.state.rateLimitPaused = err.message.includes('429') || err.message.includes('localmente');
+              App.ui.updateComponentStates();
+              return false;
+            }
+          },
+          async analyzeRecentDialogue() {
+            if (!App.state.lastWordsBuffer || App.state.lastWordsBuffer.split(' ').length < 3) {
+              return;
+            }
+            if (App.state.rateLimitPaused) {
+              return;
+            }
+            const cacheKey = App.utils.simpleHash('recent_' + App.state.lastWordsBuffer);
+            if (App.state.dialogueCache.has(cacheKey)) {
+              return;
+            }
+            const prompt = `Como um 'Closer' (fechador de vendas) mestre da Claro, seu objetivo é dizer ao vendedor EXATAMENTE o que falar AGORA.
+CONTEXTO DA CONVERSA (HISTÓRICO RECENTE):
+"${App.state.transcriptBuffer.slice(-800)}"
+ÚLTIMA FALA DO CLIENTE/VENDEDOR (O GATILHO):
+"${App.state.lastWordsBuffer}"
+OFERTAS: ${App.state.excelRawText.slice(0, 2000)}
+
+Analise o gatilho e o contexto. Determine a melhor ação imediata.
+Classifique sua sugestão em UM dos seguintes tipos:
+- "Sondagem": Para investigar necessidades (se o cliente está vago).
+- "Contorno de Objeção": Para responder a uma resistência (preço, dúvida, etc.).
+- "Argumento": Para apresentar uma solução ou benefício.
+- "Fechamento": Para conduzir à finalização da venda.
+
+Forneça UMA ÚNICA FRASE que o vendedor deve falar agora.
+Formato JSON EXATO:
+{
+  "dicas": [
+    {
+      "tipo": "Sua Classificação (ex: Sondagem)",
+      "frase": "A melhor frase que o vendedor deve falar agora",
+      "priority": "high/medium/low"
+    }
+  ]
+}`;
+            try {
+              const data = await this.fetchWithRetry(App.config.GROQ_API_ENDPOINT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${App.config.GROQ_API_KEY}` },
+                body: JSON.stringify({
+                  model: App.config.API_MODEL,
+                  messages: [{ role: "user", content: prompt }],
+                  max_tokens: 150,
+                  temperature: 0.2
+                })
+              });
+              if (!data.choices?.[0]) return;
+              const raw = data.choices[0].message.content.trim();
+              let response;
+              try {
+                const jsonMatch = raw.match(/{[\s\S]*}/);
+                if (jsonMatch) {
+                  response = JSON.parse(jsonMatch[0]);
+                  
+                  if (response.dicas && Array.isArray(response.dicas)) {
+                    response.dicas = response.dicas
+                      .filter(dica => dica.tipo && dica.frase)
+                      .slice(0, 1); // Apenas a MELHOR dica
+                    
+                    if (response.dicas.length > 0) {
+                      App.ui.prependSuggestion(response, cacheKey);
+                    }
+                  }
+                }
+              } catch (parseErr) {
+                console.warn("Falha ao processar análise recente:", parseErr);
+              }
+            } catch (err) {
+              if (err.message.includes('429') || err.message.includes('localmente')) {
+                App.state.rateLimitPaused = true;
+                App.ui.updateComponentStates();
+              }
+            }
+          },
+          async analyzeDialogue(dialogue, isRetry = false) {
+            if (!App.state.excelRawText) {
+              App.ui.prependSuggestion({ text: 'Carregue um Excel com ofertas para obter sugestões específicas.' });
+              return;
+            }
+            if (dialogue.length < App.config.MIN_TRANSCRIPT_LENGTH && !isRetry) {
+              return;
+            }
+            const cacheKey = App.utils.simpleHash(dialogue);
+            if (App.state.dialogueCache.has(cacheKey) && !isRetry) {
+              App.ui.prependSuggestion(App.state.dialogueCache.get(cacheKey), cacheKey);
+              return;
+            }
+            if (App.state.rateLimitPaused && !isRetry) {
+              const contextualFallback = this.generateContextualFallback(dialogue);
+              App.ui.prependSuggestion(contextualFallback);
+              return;
+            }
+            const prompt = `Como um DIRETOR de vendas da Claro, seu trabalho é CONDUZIR o vendedor ao fechamento. Analise o histórico da conversa e diga ao vendedor EXATAMENTE o que falar.
+HISTÓRICO DA CONVERSA:
+"${dialogue.slice(-1000)}"
+OFERTAS DISPONÍVEIS: ${App.state.excelRawText.slice(0, 3000)}
+
+Determine o estágio da venda e a melhor próxima ação.
+Classifique sua sugestão em UM dos seguintes tipos:
+- "Sondagem": Para investigar necessidades.
+- "Contorno de Objeção": Para responder a uma resistência.
+- "Argumento": Para apresentar uma solução ou benefício.
+- "Fechamento": Para conduzir à finalização da venda.
+
+Forneça UMA ÚNICA FRASE que o vendedor deve falar agora.
+Formato JSON:
+{
+  "dicas": [
+    { "tipo": "Sua Classificação (ex: Contorno de Objeção)", "frase": "A melhor frase para o vendedor usar agora", "priority": "high/medium" }
+  ]
+}`;
+            try {
+              const data = await this.fetchWithRetry(App.config.GROQ_API_ENDPOINT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${App.config.GROQ_API_KEY}` },
+                body: JSON.stringify({
+                  model: App.config.API_MODEL,
+                  messages: [{ role: "user", content: prompt }],
+                  max_tokens: 200,
+                  temperature: 0.3
+                })
+              });
+              if (!data.choices?.[0]) throw new Error("Resposta inválida da IA");
+              const raw = data.choices[0].message.content.trim();
+              let response;
+              try {
+                const jsonMatch = raw.match(/{[\s\S]*}/);
+                if (jsonMatch) {
+                  response = JSON.parse(jsonMatch[0]);
+                  
+                  if (!response.dicas || !Array.isArray(response.dicas)) {
+                    throw new Error("Estrutura inválida");
+                  }
+                  response.dicas = response.dicas
+                    .filter(dica => dica.tipo && dica.frase)
+                    .slice(0, 1); // Apenas a melhor dica
+                  if (response.dicas.length === 0) {
+                    throw new Error("Nenhuma dica válida");
+                  }
+                } else {
+                  throw new Error("Formato inválido");
+                }
+              } catch (parseErr) {
+                response = {
+                  dicas: [
+                    {
+                      tipo: "Argumento",
+                      frase: "Vamos encontrar a melhor solução para suas necessidades",
+                      priority: "medium"
+                    }
+                  ]
+                };
+              }
+              App.ui.prependSuggestion(response, cacheKey);
+            } catch (err) {
+              console.error("Erro na análise do diálogo:", err);
+              
+              if (err.message.includes('429') || err.message.includes('localmente')) {
+                App.state.rateLimitPaused = true;
+                const fallback = this.generateContextualFallback(dialogue);
+                App.ui.prependSuggestion(fallback);
+              }
+              App.ui.updateComponentStates();
+            }
+          },
+          generateContextualFallback(dialogue) {
+            const lowerDialogue = dialogue.toLowerCase();
+            const words = dialogue.split(' ').slice(-10).join(' ').toLowerCase();
+            
+            // Frases eficazes sem restrições de tamanho
+            if (/(preço|custo|valor|car[oô]|carinho)/i.test(words)) {
+              return {
+                dicas: [
+                  { tipo: "Contorno de Objeção", frase: "Entendo sua preocupação com o valor, mas considere que nosso plano oferece o melhor custo-benefício do mercado com todos esses benefícios inclusos.", priority: "high" }
+                ]
+              };
+            }
+            
+            if (/(problema|lent|ruim|não funciona)/i.test(words)) {
+              return {
+                dicas: [
+                  { tipo: "Argumento", frase: "É exatamente por isso que te liguei! Nossa rede 5G de última geração resolve todos esses problemas de lentidão e instabilidade que você está enfrentando.", priority: "high" }
+                ]
+              };
+            }
+            
+            if (/(internet|velocidade|conexão)/i.test(words)) {
+              return {
+                dicas: [
+                  { tipo: "Argumento", frase: "Com nossos 600MB de velocidade, você e sua família poderão navegar, trabalhar e assistir streaming simultaneamente sem nenhum travamento.", priority: "medium" }
+                ]
+              };
+            }
+            
+            if (/(sim|pode ser|interessante|gostei)/i.test(words)) {
+              return {
+                dicas: [
+                  { tipo: "Fechamento", frase: "Perfeito! Para dar andamento e garantir essa oferta exclusiva, qual CPF vamos usar para o contrato e qual o melhor horário para a instalação?", priority: "high" }
+                ]
+              };
+            }
+            // Fallbacks genéricos eficazes
+            const fallbacks = [
+              {
+                dicas: [
+                  { tipo: "Sondagem", frase: "Entendi perfeitamente. Além disso, o que mais seria importante para você em um plano de internet e TV?", priority: "low" }
+                ]
+              },
+              {
+                dicas: [
+                  { tipo: "Sondagem", frase: "Para te oferecer a melhor solução, me conta: quantas pessoas moram na sua casa e quantas costumam usar internet ao mesmo tempo?", priority: "medium" }
+                ]
+              },
+              {
+                dicas: [
+                  { tipo: "Fechamento", frase: "Excelente! Vamos então formalizar esse pedido para garantir que você tenha acesso a todos esses benefícios com o melhor custo-benefício do mercado.", priority: "high" }
+                ]
+              }
+            ];
+            return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+          },
+          
+          // === PROMPT DE QUALIDADE ATUALIZADO ===
+          async analyzeCallQuality(transcript) {
+            const prompt = `Como especialista em análise de qualidade de vendas de telecomunicações, analise DETALHADAMENTE esta transcrição de chamada.
+TRANSCRIÇÃO DA CONVERSA:
+"${transcript.slice(-1200)}"
+OFERTAS DISPONÍVEIS:
+${App.state.excelRawText.slice(0, 2000)}
+Forneça uma análise COMPLETA e ESTRUTURADA incluindo:
+1. NOTAS INDIVIDUAIS (0-10) para cada categoria:
+   - EMPATIA: capacidade de criar conexão emocional
+   - COMUNICAÇÃO: clareza e objetividade na fala
+   - IDENTIFICAÇÃO DE NECESSIDADES: perguntas para entender o cliente
+   - APRESENTAÇÃO DE SOLUÇÕES: como as ofertas foram apresentadas
+   - TRATAMENTO DE OBJEÇÕES: resposta a resistências do cliente
+   - TÉCNICAS DE FECHAMENTO: condução para o fechamento
+   - CONHECIMENTO TÉCNICO: domínio dos produtos
+   - PROSPECÇÃO ATIVA: identificação de oportunidades extras
+2. SCORE GERAL (0-100): Calcule a MÉDIA ARITMÉTICA das 8 notas acima e multiplique por 10.
+3. FEEDBACK DETALHADO POR MÉTRICA: Para CADA UMA das 8 métricas, forneça um item de feedback (type: 'good' ou 'bad') que justifique a nota dada, citando exemplos da transcrição.
+4. RECOMENDAÇÕES FINAIS: Recomendações práticas para a próxima chamada.
+
+Formato JSON EXATO:
+{
+  "score": 75,
+  "metrics": [
+    {"label": "Empatia", "value": 8},
+    {"label": "Comunicação", "value": 7},
+    {"label": "Identificação de Necessidades", "value": 6},
+    {"label": "Apresentação de Soluções", "value": 7},
+    {"label": "Tratamento de Objeções", "value": 5},
+    {"label": "Técnicas de Fechamento", "value": 6},
+    {"label": "Conhecimento Técnico", "value": 8},
+    {"label": "Prospecção Ativa", "value": 4}
+  ],
+  "detailedFeedback": [
+    {
+      "type": "good",
+      "title": "Empatia: Conexão inicial forte",
+      "description": "O vendedor usou o nome do cliente e um tom amigável, criando rapport.",
+      "examples": ["Trecho positivo 1 da transcrição"]
+    },
+    {
+      "type": "bad",
+      "title": "Identificação de Necessidades: Perguntas superficiais",
+      "description": "Não aprofundou nas reais necessidades do cliente, focando apenas em velocidade.",
+      "examples": ["Trecho problemático 1"]
+    },
+    {
+      "type": "bad",
+      "title": "Tratamento de Objeções: Descarte rápido de objeção de preço",
+      "description": "Quando o cliente mencionou o preço, o vendedor apenas ofereceu um desconto pequeno sem agregar valor.",
+      "examples": ["Trecho da objeção de preço"]
+    }
+  ],
+  "recommendations": [
+    "Pratique perguntas do tipo 'O que é mais importante para você em um plano?'",
+    "Use a técnica 'Sinta-se, Sentiu, Encontrou' (Feel, Felt, Found) para objeções de preço.",
+    "Tente sempre fazer pelo menos 2 tentativas de fechamento."
+  ]
+}
+IMPORTANTE:
+- O 'score' DEVE ser a média das 'metrics' * 10.
+- A seção 'detailedFeedback' é a principal. Forneça feedback (bom ou ruim) para CADA UMA das 8 métricas, justificando a nota.
+- Baseie TODAS as análises em EVIDÊNCIAS ESPECÍFICAS da transcrição.
+- Remova as chaves 'strengths' e 'improvements' separadas. Foque tudo em 'detailedFeedback'.`;
+            
+            App.elements.callQuality.innerHTML = '<div class="muted">🔍 Analisando qualidade da chamada...</div>';
+            try {
+              const data = await this.fetchWithRetry(App.config.GROQ_API_ENDPOINT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${App.config.GROQ_API_KEY}` },
+                body: JSON.stringify({
+                  model: App.config.API_MODEL,
+                  messages: [{ role: "user", content: prompt }],
+                  max_tokens: 2500, // Aumentado para permitir feedback mais detalhado
+                  temperature: 0.3
+                })
+              });
+              if (!data.choices || !data.choices[0]) throw new Error("Resposta da API inválida");
+              
+              const rawResponse = data.choices[0].message.content.trim();
+              let analysis;
+              
+              try {
+                const jsonMatch = rawResponse.match(/{[\s\S]*}/);
+                if (jsonMatch) {
+                  analysis = JSON.parse(jsonMatch[0]);
+                } else {
+                  throw new Error("Formato inválido");
+                }
+              } catch (parseErr) {
+                console.error("Erro ao parsear análise:", parseErr);
+                analysis = this.generateFallbackQualityAnalysis(transcript);
+              }
+              App.ui.renderQualityAnalysis(analysis); // Agora esta função existe
+            } catch (err) {
+              console.error("Erro na análise de qualidade:", err);
+              App.elements.callQuality.innerHTML = `<div class="danger">${
+                err.message.includes('429') || err.message.includes('localmente')
+                  ? '⏳ Limite de requisições excedido. Use o botão "Tentar Novamente".'
+                  : `❌ Erro na análise: ${err.message}`
+              }</div>`;
+              App.state.rateLimitPaused = err.message.includes('429') || err.message.includes('localmente');
+            } finally {
+              App.ui.updateComponentStates();
+            }
+          },
+          
+          generateFallbackQualityAnalysis(transcript) {
+            const lowerTranscript = transcript.toLowerCase();
+            
+            // Análise mais sofisticada baseada em palavras-chave e padrões
+            const wordCount = transcript.split(' ').filter(word => word.length > 2).length;
+            const questionMarks = (transcript.match(/\?/g) || []).length;
+            const empathyWords = (lowerTranscript.match(/(entendo|compreendo|perfeito|excelente|maravilha)/g) || []).length;
+            const objectionWords = (lowerTranscript.match(/(car[oô]|preço|custo|valor|muito|difícil)/g) || []).length;
+            const closingWords = (lowerTranscript.match(/(contrato|cpf|instalação|agendar|fechar|pedido)/g) || []).length;
+            
+            // Cálculo de scores baseado em métricas
+            const empathyScore = Math.min(10, Math.max(3, empathyWords / (wordCount / 100) * 2));
+            const questioningScore = Math.min(10, Math.max(2, (questionMarks / (wordCount / 100)) * 1.5));
+            const closingScore = Math.min(10, Math.max(1, (closingWords / (wordCount / 100)) * 3));
+            const objectionScore = objectionWords > 0 ? 4 : 7; // Penaliza se houver objeções não tratadas
+            
+            // Notas fixas para o fallback
+            const communicationScore = 7;
+            const presentationScore = 6;
+            const technicalScore = 5;
+            const prospectionScore = 3;
+            
+            // Soma de TODAS as notas para calcular a média
+            const totalScore = empathyScore + questioningScore + closingScore + objectionScore + 
+                              communicationScore + presentationScore + technicalScore + prospectionScore;
+            
+            // Média de 8 métricas
+            const overallScore = Math.round((totalScore / 8) * 10); // Média * 10 = Score 0-100
+
+            const strengths = [];
+            const improvements = [];
+            const detailedFeedback = [];
+            
+            if (empathyScore > 6) {
+              detailedFeedback.push({
+                type: "good",
+                title: "Empatia: Boa demonstração de empatia",
+                description: "Demonstrou compreensão das necessidades do cliente",
+                examples: ["Uso de palavras como 'entendo', 'compreendo'"]
+              });
+            } else {
+              detailedFeedback.push({
+                type: "bad",
+                title: "Empatia: Empatia limitada",
+                description: "Poucas demonstrações de compreensão emocional",
+                examples: ["Falta de validação das preocupações do cliente"]
+              });
+            }
+            
+            if (questioningScore <= 5) {
+               detailedFeedback.push({
+                type: "bad",
+                title: "Identificação de Necessidades: Poucas perguntas",
+                description: "Aumentar número de perguntas investigativas",
+                examples: []
+              });
+            }
+             if (closingScore < 4) {
+              detailedFeedback.push({
+                type: "bad",
+                title: "Técnicas de Fechamento: Fechamento insuficiente",
+                description: "Poucas tentativas de conduzir para o fechamento",
+                examples: ["Ausência de perguntas de fechamento"]
+              });
+            }
+            
+            if (objectionWords > 2) {
+              detailedFeedback.push({
+                type: "bad",
+                title: "Tratamento de Objeções: Objeções não tratadas",
+                description: "Mencionou preço/custo sem contra-argumentação sólida",
+                examples: ["Falta de resposta para objeções de valor"]
+              });
+            }
+
+            const metrics = [
+              {label: "Empatia", value: Math.round(empathyScore)},
+              {label: "Comunicação", value: communicationScore},
+              {label: "Identificação de Necessidades", value: Math.round(questioningScore)},
+              {label: "Apresentação de Soluções", value: presentationScore},
+              {label: "Tratamento de Objeções", value: Math.round(objectionScore)},
+              {label: "Técnicas de Fechamento", value: Math.round(closingScore)},
+              {label: "Conhecimento Técnico", value: technicalScore},
+              {label: "Prospecção Ativa", value: prospectionScore}
+            ];
+
+            return {
+              score: overallScore,
+              metrics: metrics,
+              detailedFeedback: detailedFeedback,
+              strengths: [], // Removido para focar no detailedFeedback
+              improvements: [], // Removido para focar no detailedFeedback
+              recommendations: [
+                "Use a técnica SPIN Selling: Situação, Problema, Implicação, Necessidade",
+                "Pratique 3 tipos de fechamento: alternativo, direto e por benefício",
+                "Antecipe objeções comuns e prepare respostas",
+                "Aumente o número de perguntas abertas em 50%"
+              ],
+              finalScore: { // Esta chave não é usada pelo render, mas mantida por segurança
+                overall: overallScore,
+                breakdown: "Baseado em análise de padrões de conversação"
+              }
+            };
+          }
+        },
+        utils: {
+          debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+              clearTimeout(timeout);
+              timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+          },
+          
+          throttle(func, limit) {
+            let inThrottle;
+            return function (...args) {
+              if (!inThrottle) {
+                func.apply(this, args);
+                inThrottle = true;
+                setTimeout(() => (inThrottle = false), limit);
+              }
+            };
+          },
+          
+          simpleHash(str) {
+            return str.trim().toLowerCase().slice(-200).replace(/\s+/g, ' ');
+          },
+          
+          updateLastWordsBuffer(newText) {
+            if (!newText.trim()) return;
+            
+            App.state.lastWordsBuffer += ' ' + newText;
+            
+            const words = App.state.lastWordsBuffer.trim().split(/\s+/);
+            if (words.length > App.config.RECENT_WORDS_COUNT) {
+              App.state.lastWordsBuffer = words.slice(-App.config.RECENT_WORDS_COUNT).join(' ');
+            }
+            
+            App.state.lastWordsBuffer = App.state.lastWordsBuffer.trim();
+          }
+        }
+      };
+      App.init();
+    });
+  </script>
+</body>
+</html>

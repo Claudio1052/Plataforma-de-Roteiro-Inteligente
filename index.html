@@ -3,28 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sistema de Propaganda - Elevador</title>
+    <title>Elevator Vision | Painel de Mídia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #ff6b00;
+            --primary-hover: #e65c00;
+            --bg-dark: #0a0a0a;
+            --glass-bg: rgba(25, 25, 25, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #000;
+            background: var(--bg-dark);
             color: #fff;
             overflow: hidden;
         }
 
-        /* Tela de Propaganda */
+        /* ----- TELA DO PLAYER ----- */
         #player-screen {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: #000;
             display: flex;
             flex-direction: column;
@@ -32,69 +38,117 @@
 
         #media-container {
             flex: 1;
+            position: relative;
+            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
-            position: relative;
+            background: #000;
         }
 
-        #media-display {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+        /* Transições Suaves */
+        .media-element {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; /* Faz a imagem/vídeo preencher a tela */
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            pointer-events: none;
+        }
+
+        .media-element.active {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         #click-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             cursor: pointer;
             z-index: 10;
         }
 
+        /* Barra de Progresso Inferior */
         #timer-bar {
-            height: 4px;
-            background: rgba(255, 255, 255, 0.2);
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
             position: relative;
+            z-index: 20;
         }
 
         #timer-progress {
             height: 100%;
-            background: #ff6b00;
+            background: var(--primary);
             width: 0%;
-            transition: width linear;
+            box-shadow: 0 0 10px var(--primary);
         }
 
+        /* Widget de Relógio */
+        #clock-widget {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            text-align: right;
+            z-index: 20;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
+        #time-display {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        #date-display {
+            font-size: 1.2rem;
+            font-weight: 300;
+            color: #ddd;
+        }
+
+        /* Botão Admin Inteligente */
         #admin-button {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            bottom: 30px; right: 30px;
             z-index: 100;
-            background: #ff6b00;
+            background: rgba(0, 0, 0, 0.5);
             color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 30px;
-            font-size: 16px;
-            font-weight: bold;
+            border: 1px solid rgba(255,255,255,0.2);
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
             cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            backdrop-filter: blur(5px);
+            transition: all 0.4s ease;
+            display: flex; justify-content: center; align-items: center;
         }
 
-        /* Tela Admin */
+        #admin-button:hover {
+            background: var(--primary);
+            transform: scale(1.1);
+            border-color: var(--primary);
+        }
+
+        #admin-button.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* ----- TELA ADMIN (GLASSMORPHISM) ----- */
         #admin-screen {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #1a1a1a;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(20px);
             overflow-y: auto;
             display: none;
             z-index: 1000;
-            padding: 20px;
+            padding: 40px 20px;
+        }
+
+        .admin-container {
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         .admin-header {
@@ -103,397 +157,432 @@
             align-items: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 2px solid #333;
+            border-bottom: 1px solid var(--glass-border);
         }
 
         .admin-header h1 {
-            color: #ff6b00;
+            color: var(--primary);
+            font-weight: 600;
+            letter-spacing: 1px;
         }
 
         .close-admin {
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 30px;
-            cursor: pointer;
+            background: none; border: none;
+            color: #fff; font-size: 40px;
+            cursor: pointer; transition: color 0.3s;
+            line-height: 1;
         }
 
+        .close-admin:hover { color: var(--primary); }
+
         .admin-section {
-            background: #2a2a2a;
-            border-radius: 10px;
-            padding: 20px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 25px;
             margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         .admin-section h2 {
-            color: #ff6b00;
+            font-size: 1.2rem;
             margin-bottom: 20px;
+            color: #fff;
+            display: flex; align-items: center; gap: 10px;
         }
 
-        .form-group {
-            margin-bottom: 15px;
-        }
-
+        .form-group { margin-bottom: 20px; }
         .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #ccc;
+            display: block; margin-bottom: 8px;
+            color: #aaa; font-size: 0.9rem;
         }
 
-        .form-group input[type="text"],
-        .form-group input[type="number"],
-        .form-group select {
+        .form-control {
             width: 100%;
-            padding: 10px;
-            background: #3a3a3a;
-            border: 1px solid #444;
+            padding: 12px 15px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #333;
             color: white;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
         }
 
-        .form-group input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            background: #3a3a3a;
-            border: 1px solid #444;
-            color: white;
-            border-radius: 5px;
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
         }
 
         .btn-primary {
-            background: #ff6b00;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
+            background: var(--primary); color: white;
+            width: 100%;
         }
 
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 5px;
-            cursor: pointer;
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
         }
 
-        .media-list {
-            margin-top: 20px;
-        }
+        .btn-danger { background: #dc3545; color: white; padding: 8px 16px; font-size: 0.9rem;}
+        .btn-danger:hover { background: #c82333; }
+
+        .media-list { display: flex; flex-direction: column; gap: 15px; }
 
         .media-item {
-            background: #3a3a3a;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #333;
             padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 10px;
+            border-radius: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .media-info {
-            flex: 1;
-        }
-
-        .media-info h4 {
-            margin-bottom: 5px;
-        }
-
-        .media-info p {
-            color: #aaa;
-            font-size: 12px;
-        }
-
-        .media-actions {
-            display: flex;
-            gap: 10px;
-        }
+        .media-info-wrapper { display: flex; align-items: center; gap: 15px; flex: 1; }
 
         .media-preview {
-            width: 60px;
-            height: 60px;
+            width: 70px; height: 70px;
             object-fit: cover;
-            border-radius: 5px;
-            margin-right: 15px;
+            border-radius: 8px;
+            border: 1px solid #444;
         }
 
-        #transition-time {
-            width: 100%;
-            padding: 10px;
-            background: #3a3a3a;
-            border: 1px solid #444;
-            color: white;
-            border-radius: 5px;
+        .media-icon {
+            width: 70px; height: 70px;
+            background: #222; border-radius: 8px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; border: 1px solid #444;
         }
+
+        .media-details h4 { margin-bottom: 5px; font-size: 1rem; }
+        .media-details p { color: #888; font-size: 0.8rem; }
+
+        /* Mensagem Vazia */
+        .empty-state { text-align: center; color: #666; padding: 20px; }
+
     </style>
 </head>
 <body>
-    <!-- Tela de Propaganda -->
+
     <div id="player-screen">
+        <div id="clock-widget">
+            <div id="time-display">00:00</div>
+            <div id="date-display">Carregando...</div>
+        </div>
+
         <div id="media-container">
-            <img id="media-display" src="" alt="Propaganda">
-            <video id="media-display-video" style="display: none;" controls></video>
             <div id="click-overlay"></div>
         </div>
+        
         <div id="timer-bar">
             <div id="timer-progress"></div>
         </div>
     </div>
 
-    <button id="admin-button">⚙️ Admin</button>
+    <button id="admin-button" onclick="toggleAdmin()">⚙️</button>
 
-    <!-- Tela Admin -->
     <div id="admin-screen">
-        <div class="admin-header">
-            <h1>Painel Administrativo</h1>
-            <button class="close-admin" onclick="toggleAdmin()">&times;</button>
-        </div>
+        <div class="admin-container">
+            <div class="admin-header">
+                <h1>Elevator Vision <span>Admin</span></h1>
+                <button class="close-admin" onclick="toggleAdmin()">&times;</button>
+            </div>
 
-        <div class="admin-section">
-            <h2>Configurações</h2>
-            <div class="form-group">
-                <label>Tempo de Transição (segundos):</label>
-                <input type="number" id="transition-time" min="1" max="60" value="5">
+            <div class="admin-section">
+                <h2>⏱️ Configurações Globais</h2>
+                <div class="form-group">
+                    <label>Tempo padrão de exibição (Imagens - Segundos):</label>
+                    <input type="number" id="transition-time" class="form-control" min="3" max="60" value="10">
+                </div>
             </div>
-        </div>
 
-        <div class="admin-section">
-            <h2>Adicionar Mídia</h2>
-            <div class="form-group">
-                <label>Tipo:</label>
-                <select id="media-type">
-                    <option value="image">Imagem</option>
-                    <option value="video">Vídeo</option>
-                </select>
+            <div class="admin-section">
+                <h2>➕ Adicionar Nova Mídia</h2>
+                <div class="form-group">
+                    <label>Tipo de Mídia:</label>
+                    <select id="media-type" class="form-control">
+                        <option value="image">Imagem</option>
+                        <option value="video">Vídeo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Selecione o Arquivo (Cuidado com vídeos muito grandes):</label>
+                    <input type="file" id="media-file" class="form-control" accept="image/*,video/*">
+                </div>
+                <div class="form-group">
+                    <label>URL de Redirecionamento (Opcional - Ao clicar na tela):</label>
+                    <input type="text" id="media-url" class="form-control" placeholder="Ex: https://seusite.com.br">
+                </div>
+                <button class="btn btn-primary" onclick="addMedia()">Adicionar à Fila</button>
             </div>
-            <div class="form-group">
-                <label>Arquivo:</label>
-                <input type="file" id="media-file" accept="image/*,video/*">
-            </div>
-            <div class="form-group">
-                <label>URL (opcional - para redirecionamento):</label>
-                <input type="text" id="media-url" placeholder="https://...">
-            </div>
-            <button class="btn-primary" onclick="addMedia()">Adicionar Mídia</button>
-        </div>
 
-        <div class="admin-section">
-            <h2>Lista de Propagandas</h2>
-            <div id="media-list" class="media-list"></div>
+            <div class="admin-section">
+                <h2>📋 Fila de Reprodução</h2>
+                <div id="media-list" class="media-list">
+                    </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Configuração inicial
+        // --- ESTADO DA APLICAÇÃO ---
         let medias = [];
         let currentIndex = 0;
-        let timerInterval;
-        let transitionTime = 5;
-        let isPlaying = true;
+        let timerTimeout;
+        let transitionTime = 10;
+        let activeElement = null;
 
-        // Elementos DOM
-        const mediaDisplay = document.getElementById('media-display');
-        const videoDisplay = document.getElementById('media-display-video');
+        // --- ELEMENTOS DOM ---
         const mediaContainer = document.getElementById('media-container');
         const clickOverlay = document.getElementById('click-overlay');
         const timerProgress = document.getElementById('timer-progress');
         const adminScreen = document.getElementById('admin-screen');
         const mediaList = document.getElementById('media-list');
         const transitionTimeInput = document.getElementById('transition-time');
+        const adminBtn = document.getElementById('admin-button');
 
-        // Carregar dados salvos
+        // --- INICIALIZAÇÃO ---
+        initRelogio();
         loadFromStorage();
+        iniciarOcultacaoBotaoAdmin();
 
-        // Iniciar reprodução
         if (medias.length > 0) {
             playMedia(currentIndex);
+        } else {
+            // Tela de espera amigável se não houver mídia
+            mediaContainer.innerHTML = `<h2 style="color:#555; z-index:1; position:absolute;">Nenhuma mídia cadastrada. Acesse o painel Admin.</h2>` + clickOverlay.outerHTML;
         }
 
-        // Função para alternar admin
+        // --- FUNÇÕES DE RELÓGIO ---
+        function initRelogio() {
+            const timeDisplay = document.getElementById('time-display');
+            const dateDisplay = document.getElementById('date-display');
+            
+            const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+            const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+            setInterval(() => {
+                const now = new Date();
+                timeDisplay.innerText = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                dateDisplay.innerText = `${diasSemana[now.getDay()]}, ${now.getDate()} de ${meses[now.getMonth()]}`;
+            }, 1000);
+        }
+
+        // --- UX DO BOTÃO ADMIN ---
+        function iniciarOcultacaoBotaoAdmin() {
+            let timeout;
+            document.addEventListener('mousemove', () => {
+                adminBtn.classList.remove('hidden');
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    if(adminScreen.style.display !== 'block') {
+                        adminBtn.classList.add('hidden');
+                    }
+                }, 3000);
+            });
+        }
+
+        // --- LÓGICA DO ADMIN ---
         window.toggleAdmin = function() {
             if (adminScreen.style.display === 'none' || adminScreen.style.display === '') {
                 adminScreen.style.display = 'block';
                 updateMediaList();
+                adminBtn.classList.remove('hidden');
             } else {
                 adminScreen.style.display = 'none';
             }
         };
 
-        // Função para adicionar mídia
         window.addMedia = function() {
             const fileInput = document.getElementById('media-file');
             const urlInput = document.getElementById('media-url');
             const typeSelect = document.getElementById('media-type');
 
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                const reader = new FileReader();
+            if (fileInput.files.length === 0) {
+                alert('Selecione um arquivo para continuar!');
+                return;
+            }
 
-                reader.onload = function(e) {
-                    const media = {
-                        id: Date.now(),
-                        type: typeSelect.value,
-                        content: e.target.result,
-                        url: urlInput.value || null,
-                        name: file.name
-                    };
+            const file = fileInput.files[0];
+            const reader = new FileReader();
 
-                    medias.push(media);
-                    saveToStorage();
-                    updateMediaList();
-
-                    // Se for a primeira mídia, iniciar reprodução
-                    if (medias.length === 1) {
-                        playMedia(0);
-                    }
+            reader.onload = function(e) {
+                const media = {
+                    id: Date.now(),
+                    type: typeSelect.value,
+                    content: e.target.result,
+                    url: urlInput.value || null,
+                    name: file.name
                 };
 
-                reader.readAsDataURL(file);
-            } else {
-                alert('Selecione um arquivo!');
-            }
+                medias.push(media);
+                
+                // Tratar erro de limite do localStorage
+                if(!saveToStorage()) {
+                    medias.pop(); // Remove a última adicionada se falhar
+                    return;
+                }
+
+                updateMediaList();
+                fileInput.value = '';
+                urlInput.value = '';
+
+                // Iniciar reprodução se for a primeira mídia ou se estava vazio
+                if (medias.length === 1) {
+                    currentIndex = 0;
+                    playMedia(0);
+                }
+            };
+
+            reader.readAsDataURL(file);
         };
 
-        // Função para remover mídia
         window.removeMedia = function(id) {
             medias = medias.filter(m => m.id !== id);
             saveToStorage();
             updateMediaList();
 
             if (medias.length === 0) {
-                clearInterval(timerInterval);
-                mediaDisplay.src = '';
-                videoDisplay.style.display = 'none';
-                mediaDisplay.style.display = 'block';
-            } else {
-                currentIndex = Math.min(currentIndex, medias.length - 1);
+                clearTimeout(timerTimeout);
+                timerProgress.style.width = '0%';
+                mediaContainer.innerHTML = `<h2 style="color:#555; z-index:1; position:absolute;">Nenhuma mídia cadastrada. Acesse o painel Admin.</h2>` + clickOverlay.outerHTML;
+            } else if (id === medias[currentIndex]?.id || currentIndex >= medias.length) {
+                currentIndex = 0;
                 playMedia(currentIndex);
             }
         };
 
-        // Função para reproduzir mídia
+        // --- MOTOR DE REPRODUÇÃO ---
         function playMedia(index) {
             if (medias.length === 0) return;
+            clearTimeout(timerTimeout);
 
-            clearInterval(timerInterval);
             const media = medias[index];
-
-            // Resetar displays
-            mediaDisplay.style.display = 'none';
-            videoDisplay.style.display = 'none';
-
+            
+            // Criar novo elemento para permitir transição suave (Crossfade)
+            let newElement;
             if (media.type === 'image') {
-                mediaDisplay.src = media.content;
-                mediaDisplay.style.display = 'block';
-                startTimer();
+                newElement = document.createElement('img');
+                newElement.src = media.content;
             } else {
-                videoDisplay.src = media.content;
-                videoDisplay.style.display = 'block';
-                videoDisplay.play();
-
-                // Para vídeos, usar a duração do vídeo como tempo
-                videoDisplay.onloadedmetadata = function() {
-                    transitionTime = videoDisplay.duration || transitionTime;
-                };
+                newElement = document.createElement('video');
+                newElement.src = media.content;
+                newElement.muted = true; // Necessário para Autoplay sem intervenção em navegadores modernos
+                newElement.playsInline = true;
             }
 
-            // Configurar link de redirecionamento
+            newElement.className = 'media-element';
+            
+            // Inserir antes do overlay
+            mediaContainer.insertBefore(newElement, clickOverlay);
+
+            // Reflow para a transição CSS funcionar
+            void newElement.offsetWidth;
+            newElement.classList.add('active');
+
+            // Lidar com o elemento anterior (Remover após a transição)
+            if (activeElement) {
+                const oldEl = activeElement;
+                oldEl.classList.remove('active');
+                setTimeout(() => { if (oldEl.parentNode) oldEl.parentNode.removeChild(oldEl); }, 1000);
+            }
+            activeElement = newElement;
+
+            // Lógica de tempo e progresso
+            if (media.type === 'image') {
+                animateProgress(transitionTime);
+                timerTimeout = setTimeout(nextMedia, transitionTime * 1000);
+            } else {
+                newElement.onloadedmetadata = function() {
+                    const videoDuration = newElement.duration || transitionTime;
+                    animateProgress(videoDuration);
+                };
+                newElement.onended = nextMedia;
+                
+                // Tratamento caso o vídeo falhe ao carregar/tocar
+                newElement.play().catch(e => {
+                    console.error("Erro ao reproduzir vídeo", e);
+                    nextMedia();
+                });
+            }
+
+            // Configurar clique na tela inteira
             clickOverlay.onclick = function() {
-                if (media.url) {
-                    window.open(media.url, '_blank');
-                }
+                if (media.url) window.open(media.url, '_blank');
             };
         }
 
-        // Função para iniciar timer
-        function startTimer() {
-            timerProgress.style.width = '0%';
-            timerProgress.style.transition = `width ${transitionTime}s linear`;
-            
-            setTimeout(() => {
-                timerProgress.style.width = '100%';
-            }, 10);
-
-            timerInterval = setInterval(() => {
-                nextMedia();
-            }, transitionTime * 1000);
-        }
-
-        // Função para próxima mídia
         function nextMedia() {
+            if (medias.length <= 1) {
+                // Se só tem 1 mídia, apenas repete a animação da barra e reinicia o vídeo se houver
+                if(medias.length === 1) {
+                   playMedia(0); 
+                }
+                return;
+            }
             currentIndex = (currentIndex + 1) % medias.length;
             playMedia(currentIndex);
         }
 
-        // Função para salvar no localStorage
-        function saveToStorage() {
-            localStorage.setItem('elevador_medias', JSON.stringify(medias));
-            localStorage.setItem('elevador_transition', transitionTime);
+        function animateProgress(seconds) {
+            // Reseta a barra
+            timerProgress.style.transition = 'none';
+            timerProgress.style.width = '0%';
+            
+            // Força o navegador a recalcular o layout (Reflow crucial)
+            void timerProgress.offsetWidth; 
+            
+            // Aplica a nova transição
+            timerProgress.style.transition = `width ${seconds}s linear`;
+            timerProgress.style.width = '100%';
         }
 
-        // Função para carregar do localStorage
+        // --- ARMAZENAMENTO ---
+        function saveToStorage() {
+            try {
+                localStorage.setItem('elevador_medias', JSON.stringify(medias));
+                localStorage.setItem('elevador_transition', transitionTime);
+                return true;
+            } catch (e) {
+                console.error("Erro de Storage:", e);
+                alert("Aviso: A memória local do navegador está cheia! Arquivos muito grandes (como vídeos) excedem o limite de ~5MB do localStorage.\n\nPara resolver isso de forma definitiva, será necessário conectar este frontend a um Banco de Dados.");
+                return false;
+            }
+        }
+
         function loadFromStorage() {
             const savedMedias = localStorage.getItem('elevador_medias');
             const savedTransition = localStorage.getItem('elevador_transition');
 
-            if (savedMedias) {
-                medias = JSON.parse(savedMedias);
-            }
-
+            if (savedMedias) medias = JSON.parse(savedMedias);
             if (savedTransition) {
                 transitionTime = parseInt(savedTransition);
                 transitionTimeInput.value = transitionTime;
             }
         }
 
-        // Função para atualizar lista de mídias no admin
         function updateMediaList() {
-            mediaList.innerHTML = '';
+            if (medias.length === 0) {
+                mediaList.innerHTML = '<div class="empty-state">Nenhuma mídia na fila. Adicione acima!</div>';
+                return;
+            }
 
+            mediaList.innerHTML = '';
             medias.forEach(media => {
                 const item = document.createElement('div');
                 item.className = 'media-item';
 
-                item.innerHTML = `
-                    <div style="display: flex; align-items: center;">
-                        ${media.type === 'image' ? 
-                            `<img src="${media.content}" class="media-preview">` : 
-                            '<div class="media-preview" style="background: #444; display: flex; align-items: center; justify-content: center;">🎬</div>'
-                        }
-                        <div class="media-info">
-                            <h4>${media.name}</h4>
-                            <p>Tipo: ${media.type} | ${media.url ? 'Com link' : 'Sem link'}</p>
-                        </div>
-                    </div>
-                    <div class="media-actions">
-                        <button class="btn-danger" onclick="removeMedia(${media.id})">Remover</button>
-                    </div>
-                `;
+                const isImage = media.type === 'image';
+                const previewHtml = isImage 
+                    ? `<img src="${media.cont
 
-                mediaList.appendChild(item);
-            });
-        }
-
-        // Salvar tempo de transição quando alterado
-        transitionTimeInput.addEventListener('change', function() {
-            transitionTime = parseInt(this.value);
-            saveToStorage();
-            
-            if (medias.length > 0 && medias[currentIndex].type === 'image') {
-                clearInterval(timerInterval);
-                playMedia(currentIndex);
-            }
-        });
-
-        // Tecla ESC para fechar admin
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && adminScreen.style.display === 'block') {
-                toggleAdmin();
-            }
-        });
-    </script>
-</body>
-</html>
